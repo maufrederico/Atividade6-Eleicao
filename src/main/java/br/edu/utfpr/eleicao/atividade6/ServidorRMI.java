@@ -9,10 +9,13 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,7 +25,7 @@ import java.util.logging.Logger;
  */
 
 
-public class ServidorRMI implements InterfaceEleicao{
+public class ServidorRMI implements InterfaceEleicao, Runnable{
 
     
     
@@ -34,37 +37,6 @@ public class ServidorRMI implements InterfaceEleicao{
     }
     
     
-    @Override
-    public void contarVotos() throws RemoteException {
-        System.out.println("---------------------------------------------------");
-        for (Map.Entry<String, Map<String, Long>> entry : apuracao.entrySet()) {
-             System.out.println(entry.getKey());
-            Map<String, Long> valor = entry.getValue();
-            
-            valor.entrySet().stream().sorted((k1, k2) -> -k1.getValue().compareTo(k2.getValue()))
-                    .forEach((k,v)-> System.out.println(k +" - "v));
-           // for (Map.Entry<String, Long> entry1 : valor.entrySet()) {
-             //  System.out.println(entry1.getKey()+" - "+entry1.getValue() );
-                
-                
-            /}
-            
-        }
-         System.out.println("---------------------------------------------------");
-    }
-
-    @Override
-    public void enviarVotos(Map<String, Long> resultado, Cargo cargo) throws RemoteException {
-       
-        
-        apuracao.put(cargo.name(), resultado);
-    }
-    
-     @Override
-    public List<Candidato> retornaCandidatoCadastrados() throws RemoteException {
-        return candidatos;
-    }
-    
     public static void main(String[] args) {
         try {
             
@@ -75,21 +47,80 @@ public class ServidorRMI implements InterfaceEleicao{
             InterfaceEleicao skeleton = (InterfaceEleicao) UnicastRemoteObject.exportObject(servidor, 0);
             registro.rebind("metodoEleicao", skeleton);
             
-            System.out.println("Aguardando conexão...\n");
-            while(true){
-                servidor.contarVotos();
-                Thread.sleep(5000);
-            }
+            System.out.println("Inicio da Apuração...\n");
             
-         
-            
+           new Thread(servidor).start();
+           
+      
             
         } catch (RemoteException ex) {
             Logger.getLogger(ServidorRMI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(ServidorRMI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+    
+    
+    @Override
+    public void contarVotos() throws RemoteException {
+     
+        System.out.println("Ultima Atualizacao: "+LocalDateTime.now());
+        System.out.println();
+        for (Map.Entry<String, Map<String, Long>> entry : apuracao.entrySet()) {
+             System.out.println("--------------"+entry.getKey()+"--------------");
+             System.out.println();
+            Map<String, Long> valor = entry.getValue();
+            
+            valor.entrySet().stream()
+                    .sorted((k1, k2) -> -k1.getValue().compareTo(k2.getValue()))
+                    .forEach((k) -> System.out.println(k.getKey() +" - "+k.getValue()));
+            
+            System.out.println();
+        }
+        
+    }
+
+
+    @Override
+    public synchronized void receberVotos(Map<String, Long> resultado, Cargo cargo) throws RemoteException {
+        //  Map<String, Long> hashmap = new HashMap<>(resultado);
+      
+        for (Entry<String, Long> entry : resultado.entrySet()) {
+            
+             apuracao.computeIfPresent(cargo.name(), (k,v) -> {
+                 v.computeIfPresent(entry.getKey(), (k1, v1)->v1 +entry.getValue())  ;
+            
+                 v.putIfAbsent(entry.getKey(), entry.getValue());
+                 return v;
+       
+             });
+        
+        }
+        apuracao.putIfAbsent(cargo.name(), resultado);
+               
+    }
+    
+     @Override
+    public List<Candidato> retornaCandidatoCadastrados() throws RemoteException {
+        return candidatos;
+    }
+
+    @Override
+    public void run() {
+        
+         while(true){
+             try {
+                 contarVotos();
+                 Thread.sleep(5000);
+             } catch (RemoteException ex) {
+                 Logger.getLogger(ServidorRMI.class.getName()).log(Level.SEVERE, null, ex);
+             } catch (InterruptedException ex) {
+                 Logger.getLogger(ServidorRMI.class.getName()).log(Level.SEVERE, null, ex);
+             }
+               
+            }
+       
+    }
+    
     
     private  void cadastraCandidatos() {
         //presidentes
@@ -107,7 +138,4 @@ public class ServidorRMI implements InterfaceEleicao{
         
     }
 
-   
-    
-    
 }

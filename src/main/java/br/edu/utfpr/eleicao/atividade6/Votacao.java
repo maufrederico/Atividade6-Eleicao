@@ -6,7 +6,6 @@
 package br.edu.utfpr.eleicao.atividade6;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,10 +36,6 @@ import java.util.stream.Collectors;
     public Map<String,Long> sumarizaVotos(Cargo cargo){
       return  votos.stream().filter(voto -> voto.getCandidato().getCargo()== cargo)
                 .collect(Collectors.groupingBy(voto -> voto.getCandidato().getNome(), Collectors.counting()));
-                 
-             //
-            //    .entrySet().stream().sorted((k1, k2) -> -k1.getValue().compareTo(k2.getValue()))
-            // .forEach((k) -> System.out.println(k.getKey()+": "+k.getValue()));
     }
     
     

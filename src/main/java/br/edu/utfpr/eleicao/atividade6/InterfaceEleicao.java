@@ -20,7 +20,7 @@ public interface InterfaceEleicao extends Remote {
     
     public List<Candidato> retornaCandidatoCadastrados() throws RemoteException;
       
-    public void enviarVotos(Map<String, Long> resultado, Cargo cargo) throws RemoteException;
+    public void receberVotos(Map<String, Long> resultado, Cargo cargo) throws RemoteException;
 
 
 }

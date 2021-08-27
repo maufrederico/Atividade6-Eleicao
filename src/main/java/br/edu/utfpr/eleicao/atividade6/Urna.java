@@ -6,12 +6,10 @@
 package br.edu.utfpr.eleicao.atividade6;
 
 
-import static java.lang.Math.random;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -60,7 +58,7 @@ public class Urna  {
             
             for (Cargo cargo : Cargo.values()){
                 Map<String,Long> resultado =  urna.getVotacao().sumarizaVotos(cargo);
-                stub.enviarVotos(resultado, cargo);
+                stub.receberVotos(resultado, cargo);
             }
            
          //   stub.contarVotos();
@@ -70,33 +68,35 @@ public class Urna  {
     }
     
     public void simulaEleicao(){
-        List<Candidato> presidentes = candidatos.stream()
-                                                .filter(candidato -> candidato.getCargo() == Cargo.Presidente)
-                                                .toList();
-        List<Candidato> governadores = candidatos.stream()
-                                                .filter(candidato -> candidato.getCargo() == Cargo.Governador)
-                                                .toList();
-       
-        // votacao presidente
-        for (int i = 0; i < 500; i++) {
-            int randomNumber = new Random().nextInt(presidentes.size() );
-          //  votacao.getVotos().add(new Voto(Cargo.Presidente, presidentes.get(randomNumber).getNumero()));
-            votacao.getVotos().add(new Voto( presidentes.get(randomNumber)));
-        }
-         // votacao governador
-        for (int i = 0; i < 500; i++) {
-            int randomNumber = new Random().nextInt(governadores.size());
-            //votacao.getVotos().add(new Voto(Cargo.Governador, governadores.get(randomNumber).getNumero()));
-            votacao.getVotos().add(new Voto( governadores.get(randomNumber)));
-        }
+              
         
-       // votacao.getVotos().forEach((voto -> System.out.println(voto.toString())));
+         for (Cargo cargo : Cargo.values()){
+             
+             List<Candidato> candidatosCargo = candidatos.stream()
+                                                .filter(candidato -> candidato.getCargo() == cargo)
+                                                .collect(Collectors.toList());
+              
+            for (int i = 0; i < 500; i++) {
+
+                //apenas para dar tempo para mais urnas enviarem para o servidor
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Urna.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+
+                int candidatoAleatorio = new Random().nextInt(candidatosCargo.size() );
+
+                votacao.getVotos().add(new Voto( candidatosCargo.get(candidatoAleatorio)));
+
+            }
+         }
+        
+     
     }
 
-    private void contagemVotos(InterfaceEleicao stub) {
-        
-         
-    }
+   
 
     
     
